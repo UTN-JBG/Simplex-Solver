@@ -17,7 +17,7 @@ Aplicación web que tiene como objetivo resolver problemas de programación line
 El equipo aplica **Scrum** como marco de trabajo:
 - **Sprints** de 2 semanas.
 - **Daily Meetings** de seguimiento.
-- **Product Backlog** gestionado en Jira/Trello.
+- **Product Backlog** gestionado en GitHub Projects.
 - **Revisiones de Sprint** para validar entregables.
 - **Retrospectivas** para la mejora continua.
 
@@ -35,5 +35,5 @@ go mod tidy
 go run main.go
 ```
 
-La API estará disponible en:
+La app estará disponible en:
  http://localhost:8080
