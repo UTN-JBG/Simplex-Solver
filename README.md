@@ -34,6 +34,15 @@ cd Simplex-Solver
 go mod tidy
 go run main.go
 ```
-
-La app estará disponible en:
- http://localhost:8080
+## 3. Desde Postman probar ruta
+```
+http://localhost:8080/api/simplex
+```
+En Body, seleccionar raw y copiar JSON
+```
+{
+  "objective": [3, 5],
+  "constraints": [[1, 0], [0, 2], [3, 2]],
+  "rhs": [4, 12, 18]
+}
+```
