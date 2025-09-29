@@ -9,6 +9,7 @@ import (
 type SimplexSolver struct {
 	tableau [][]float64
 	basis   []int
+	status  string // nuevo: guarda estado ("ok", "inviable", "ilimitado")
 }
 
 // NewSimplex crea el solver a partir de la función objetivo y restricciones
@@ -16,6 +17,13 @@ func NewSimplex(c []float64, A [][]float64, b []float64) *SimplexSolver {
 	m := len(A) // cantidad de restricciones
 	n := len(c) // cantidad de variables
 	totalVars := n + m
+
+	// Verificar inviabilidad inicial (b < 0)
+	for _, bi := range b {
+		if bi < 0 {
+			return &SimplexSolver{status: "inviable"}
+		}
+	}
 
 	// Crear tableau con holguras
 	tableau := make([][]float64, m+1)
@@ -36,11 +44,15 @@ func NewSimplex(c []float64, A [][]float64, b []float64) *SimplexSolver {
 		basis[i] = n + i
 	}
 
-	return &SimplexSolver{tableau, basis}
+	return &SimplexSolver{tableau, basis, "ok"}
 }
 
 // Solve ejecuta el algoritmo del simplex
 func (s *SimplexSolver) Solve() {
+	if s.status != "ok" {
+		return
+	}
+
 	m := len(s.tableau) - 1
 	n := len(s.tableau[0]) - 1
 
@@ -72,7 +84,7 @@ func (s *SimplexSolver) Solve() {
 		}
 
 		if pivotRow == -1 {
-			fmt.Println("Problema no acotado")
+			s.status = "ilimitado"
 			return
 		}
 
@@ -104,7 +116,14 @@ func (s *SimplexSolver) pivot(row, col int) {
 
 func SolveSimplex(objective []float64, constraints [][]float64, rhs []float64) string {
 	solver := NewSimplex(objective, constraints, rhs)
+	if solver.status == "inviable" {
+		return "Problema sin solución factible"
+	}
+
 	solver.Solve()
+	if solver.status == "ilimitado" {
+		return "Problema ilimitado"
+	}
 
 	// Armar resultado como string
 	m := len(solver.tableau) - 1
