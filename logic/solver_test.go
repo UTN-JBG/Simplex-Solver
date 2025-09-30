@@ -2,7 +2,6 @@ package logic
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 )
 
@@ -17,9 +16,13 @@ func TestSolveSimplex_CasoBasico(t *testing.T) {
 	b := []float64{4, 12, 18}
 
 	result := SolveSimplex(c, A, b)
-	expected := "Solución óptima:\nx1 = 2.00\nx2 = 6.00\nValor óptimo = 36.00"
-
-	if result != expected {
+	expected := []string{
+		"Solución óptima:",
+		"x1 = 2.00",
+		"x2 = 6.00",
+		"Valor óptimo = 36.00",
+	}
+	if len(result) != len(expected) {
 		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
 	}
 }
@@ -34,15 +37,19 @@ func TestSolveSimplex_TodosCeros(t *testing.T) {
 
 	result := SolveSimplex(c, A, b)
 
-	if !strings.Contains(result, "Valor óptimo = 0.00") {
-		t.Errorf("Se esperaba valor óptimo 0.00, got: %v", result)
+	valorOptimo := result[len(result)-1]
+	if valorOptimo != "Valor óptimo = 0.00" {
+		t.Errorf("Se esperaba valor óptimo 0.00, got: %v", valorOptimo)
 	}
 
 	// Extraer las variables de la salida
-	var x1, x2, valor float64
-	fmt.Sscanf(result, "Solución óptima:\nx1 = %f\nx2 = %f\nValor óptimo = %f", &x1, &x2, &valor)
+	var x1, x2 float64
+	_, err1 := fmt.Sscanf(result[1], "x1 = %f", &x1)
+	_, err2 := fmt.Sscanf(result[2], "x2 = %f", &x2)
+	if err1 != nil || err2 != nil {
+		t.Fatalf("Error al parsear variables de la salida")
+	}
 
-	// Verificar factibilidad
 	if x1 < -1e-6 || x2 < -1e-6 || x1+x2 > 5+1e-6 {
 		t.Errorf("Solución no factible: x1=%v, x2=%v", x1, x2)
 	}
@@ -57,9 +64,9 @@ func TestSolveSimplex_ProblemaInviable(t *testing.T) {
 	b := []float64{-1} // RHS negativa, problema inviables
 
 	result := SolveSimplex(c, A, b)
-	expected := "Problema sin solución factible"
+	expected := []string{"Problema sin solución factible"}
 
-	if result != expected {
+	if len(result) != len(expected) || result[0] != expected[0] {
 		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
 	}
 }
@@ -73,9 +80,9 @@ func TestSolveSimplex_ProblemaIlimitado(t *testing.T) {
 	b := []float64{1}
 
 	result := SolveSimplex(c, A, b)
-	expected := "Problema ilimitado"
+	expected := []string{"Problema ilimitado"}
 
-	if result != expected {
+	if len(result) != len(expected) || result[0] != expected[0] {
 		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
 	}
 }

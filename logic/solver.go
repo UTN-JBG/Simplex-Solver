@@ -2,7 +2,6 @@ package logic
 
 import (
 	"fmt"
-	"strings"
 )
 
 // SimplexSolver resuelve problemas de maximización lineales
@@ -114,18 +113,18 @@ func (s *SimplexSolver) pivot(row, col int) {
 	}
 }
 
-func SolveSimplex(objective []float64, constraints [][]float64, rhs []float64) string {
+func SolveSimplex(objective []float64, constraints [][]float64, rhs []float64) []string {
 	solver := NewSimplex(objective, constraints, rhs)
 	if solver.status == "inviable" {
-		return "Problema sin solución factible"
+		return []string{"Problema sin solución factible"}
 	}
 
 	solver.Solve()
 	if solver.status == "ilimitado" {
-		return "Problema ilimitado"
+		return []string{"Problema ilimitado"}
 	}
 
-	// Armar resultado como string
+	// Armar resultado como slice de strings
 	m := len(solver.tableau) - 1
 	n := len(solver.tableau[0]) - 1
 	sol := make([]float64, n)
@@ -136,12 +135,11 @@ func SolveSimplex(objective []float64, constraints [][]float64, rhs []float64) s
 		}
 	}
 
-	var sb strings.Builder
-	sb.WriteString("Solución óptima:\n")
+	result := []string{"Solución óptima:"}
 	for j := 0; j < len(objective); j++ {
-		sb.WriteString(fmt.Sprintf("x%d = %.2f\n", j+1, sol[j]))
+		result = append(result, fmt.Sprintf("x%d = %.2f", j+1, sol[j]))
 	}
-	sb.WriteString(fmt.Sprintf("Valor óptimo = %.2f", solver.tableau[m][n]))
+	result = append(result, fmt.Sprintf("Valor óptimo = %.2f", solver.tableau[m][n]))
 
-	return sb.String()
+	return result
 }

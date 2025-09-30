@@ -13,6 +13,7 @@ type SimplexRequest struct {
 	Objective   []float64   `json:"objective"`   // coeficientes función objetivo
 	Constraints [][]float64 `json:"constraints"` // matriz de restricciones
 	RHS         []float64   `json:"rhs"`         // términos independientes
+	Type        string      `json:"type"`        // "max" o "min"
 }
 
 func SolveSimplexHandler(c *gin.Context) {
@@ -23,6 +24,20 @@ func SolveSimplexHandler(c *gin.Context) {
 		return
 	}
 
+	// Validar type
+	if req.Type != "max" && req.Type != "min" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "El campo 'type' debe ser 'max' o 'min'"})
+		return
+	}
+
+	// Si es minimización, invertimos los coeficientes
+	if req.Type == "min" {
+		for i := range req.Objective {
+			req.Objective[i] = -req.Objective[i]
+		}
+	}
+
+	// Si fue minimización, invertir signo del resultado óptimo
 	result := logic.SolveSimplex(req.Objective, req.Constraints, req.RHS)
 
 	c.JSON(http.StatusOK, gin.H{
