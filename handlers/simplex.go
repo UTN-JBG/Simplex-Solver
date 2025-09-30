@@ -18,6 +18,7 @@ type SimplexRequest struct {
 
 func SolveSimplexHandler(c *gin.Context) {
 	var req SimplexRequest
+	var result []string
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -32,13 +33,10 @@ func SolveSimplexHandler(c *gin.Context) {
 
 	// Si es minimización, invertimos los coeficientes
 	if req.Type == "min" {
-		for i := range req.Objective {
-			req.Objective[i] = -req.Objective[i]
-		}
+		result = logic.SolveSimplexMin(req.Objective, req.Constraints, req.RHS)
+	} else {
+		result = logic.SolveSimplexMax(req.Objective, req.Constraints, req.RHS)
 	}
-
-	// Si fue minimización, invertir signo del resultado óptimo
-	result := logic.SolveSimplex(req.Objective, req.Constraints, req.RHS)
 
 	c.JSON(http.StatusOK, gin.H{
 		"result": result,
