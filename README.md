@@ -41,8 +41,15 @@ http://localhost:8080/api/simplex
 En Body, seleccionar raw y copiar JSON
 ```
 {
-  "objective": [3, 5],
-  "constraints": [[1, 0], [0, 2], [3, 2]],
-  "rhs": [4, 12, 18]
+  "objective": [4, 3, 2, 1],
+  "constraints": [
+    [2, 1, 0, 3],
+    [1, 3, 2, 1],
+    [0, 2, 1, 4]
+  ],
+  "rhs": [5, 11, 8],
+  "type": "max"
 }
+
+
 ```
