@@ -15,7 +15,7 @@ func TestSolveSimplex_CasoBasico(t *testing.T) {
 	}
 	b := []float64{4, 12, 18}
 
-	result := SolveSimplex(c, A, b)
+	result := SolveSimplexMax(c, A, b)
 	expected := []string{
 		"Solución óptima:",
 		"x1 = 2.00",
@@ -35,7 +35,7 @@ func TestSolveSimplex_TodosCeros(t *testing.T) {
 	}
 	b := []float64{5}
 
-	result := SolveSimplex(c, A, b)
+	result := SolveSimplexMax(c, A, b)
 
 	valorOptimo := result[len(result)-1]
 	if valorOptimo != "Valor óptimo = 0.00" {
@@ -63,7 +63,7 @@ func TestSolveSimplex_ProblemaInviable(t *testing.T) {
 	}
 	b := []float64{-1} // RHS negativa, problema inviables
 
-	result := SolveSimplex(c, A, b)
+	result := SolveSimplexMax(c, A, b)
 	expected := []string{"Problema sin solución factible"}
 
 	if len(result) != len(expected) || result[0] != expected[0] {
@@ -79,7 +79,7 @@ func TestSolveSimplex_ProblemaIlimitado(t *testing.T) {
 	}
 	b := []float64{1}
 
-	result := SolveSimplex(c, A, b)
+	result := SolveSimplexMax(c, A, b)
 	expected := []string{"Problema ilimitado"}
 
 	if len(result) != len(expected) || result[0] != expected[0] {
