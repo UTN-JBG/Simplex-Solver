@@ -2,6 +2,8 @@ package logic
 
 import (
 	"fmt"
+	"math"
+	"strings"
 
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/optimize/convex/lp"
@@ -25,15 +27,21 @@ func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64
 	// Resolver LP
 	optVal, x, err := lp.Simplex(obj, A, flippedRHS, 0, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "infeasible") {
+			return []string{"Problema sin solución factible"}
+		}
+		if strings.Contains(err.Error(), "unbounded") {
+			return []string{"Problema ilimitado"}
+		}
 		return []string{"Error: " + err.Error()}
 	}
 
 	// Preparar resultado
 	result := []string{"Solución óptima (minimización):"}
 	for i := 0; i < len(objective); i++ { // mostrar solo las variables originales
-		result = append(result, fmt.Sprintf("x%d = %.4f", i+1, x[i]))
+		result = append(result, fmt.Sprintf("x%d = %.2f", i+1, x[i]))
 	}
-	result = append(result, fmt.Sprintf("Valor óptimo = %.4f", optVal))
+	result = append(result, fmt.Sprintf("Valor óptimo = %.2f", optVal))
 	return result
 }
 
@@ -50,17 +58,25 @@ func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64
 
 	optVal, x, err := lp.Simplex(obj, A, rhs, 0, nil)
 	if err != nil {
+		if strings.Contains(err.Error(), "infeasible") {
+			return []string{"Problema sin solución factible"}
+		}
+		if strings.Contains(err.Error(), "unbounded") {
+			return []string{"Problema ilimitado"}
+		}
 		return []string{"Error: " + err.Error()}
 	}
 
 	optVal = -optVal // revertir signo
-
+	if math.Abs(optVal) < 1e-9 {
+		optVal = 0
+	}
 	// Preparar resultado
 	result := []string{"Solución óptima:"}
 	for i := 0; i < len(objective); i++ {
-		result = append(result, fmt.Sprintf("x%d = %.4f", i+1, x[i]))
+		result = append(result, fmt.Sprintf("x%d = %.2f", i+1, x[i]))
 	}
-	result = append(result, fmt.Sprintf("Valor óptimo = %.4f", optVal))
+	result = append(result, fmt.Sprintf("Valor óptimo = %.2f", optVal))
 	return result
 }
 
