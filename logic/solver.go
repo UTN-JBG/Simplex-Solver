@@ -5,12 +5,14 @@ import (
 	"math"
 	"strings"
 
+	"proyecto/simplex/models"
+
 	"gonum.org/v1/gonum/mat"
 	"gonum.org/v1/gonum/optimize/convex/lp"
 )
 
 // SolveSimplexMin resuelve minimización con holguras automáticas
-func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64) []string {
+func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
 	// Paso 0: invertir el signo de restricciones y RHS
 	flippedConstraints := make([][]float64, len(constraints))
 	flippedRHS := make([]float64, len(rhs))
@@ -28,26 +30,30 @@ func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64
 	optVal, x, err := lp.Simplex(obj, A, flippedRHS, 0, nil)
 	if err != nil {
 		if strings.Contains(err.Error(), "infeasible") {
-			return []string{"Problema sin solución factible"}
+			return models.SimplexResponse{Status: "infeasible"}
 		}
 		if strings.Contains(err.Error(), "unbounded") {
-			return []string{"Problema ilimitado"}
+			return models.SimplexResponse{Status: "unbounded"}
 		}
-		return []string{"Error: " + err.Error()}
+		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
-	// Preparar resultado
-	result := []string{"Solución óptima (minimización):"}
-	for i := 0; i < len(objective); i++ { // mostrar solo las variables originales
-		result = append(result, fmt.Sprintf("x%d = %.2f", i+1, x[i]))
+	// Mapear variables originales
+	vars := make(map[string]float64)
+	for i := 0; i < len(objective); i++ {
+		vars[fmt.Sprintf("x%d", i+1)] = x[i]
 	}
-	result = append(result, fmt.Sprintf("Valor óptimo = %.2f", optVal))
-	return result
+
+	return models.SimplexResponse{
+		Variables: vars,
+		Optimal:   optVal,
+		Status:    "optimal",
+	}
 }
 
 // SolveSimplexMax resuelve maximización con holguras automáticas
-func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64) []string {
-	// Para maximización, invertimos el objetivo y luego revertimos el valor óptimo
+func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
+	// Invertir objetivo
 	negObj := make([]float64, len(objective))
 	copy(negObj, objective)
 	for i := range negObj {
@@ -59,25 +65,30 @@ func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64
 	optVal, x, err := lp.Simplex(obj, A, rhs, 0, nil)
 	if err != nil {
 		if strings.Contains(err.Error(), "infeasible") {
-			return []string{"Problema sin solución factible"}
+			return models.SimplexResponse{Status: "infeasible"}
 		}
 		if strings.Contains(err.Error(), "unbounded") {
-			return []string{"Problema ilimitado"}
+			return models.SimplexResponse{Status: "unbounded"}
 		}
-		return []string{"Error: " + err.Error()}
+		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
 	optVal = -optVal // revertir signo
 	if math.Abs(optVal) < 1e-9 {
 		optVal = 0
 	}
-	// Preparar resultado
-	result := []string{"Solución óptima:"}
+
+	// Mapear variables originales
+	vars := make(map[string]float64)
 	for i := 0; i < len(objective); i++ {
-		result = append(result, fmt.Sprintf("x%d = %.2f", i+1, x[i]))
+		vars[fmt.Sprintf("x%d", i+1)] = x[i]
 	}
-	result = append(result, fmt.Sprintf("Valor óptimo = %.2f", optVal))
-	return result
+
+	return models.SimplexResponse{
+		Variables: vars,
+		Optimal:   optVal,
+		Status:    "optimal",
+	}
 }
 
 // addSlackVariables agrega variables de holgura para restricciones ≤

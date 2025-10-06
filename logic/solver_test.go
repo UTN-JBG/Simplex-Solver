@@ -1,11 +1,11 @@
 package logic
 
 import (
-	"fmt"
+	"math"
 	"testing"
 )
 
-// Test:problema caso basico
+// Test: problema caso basico
 func TestSolveSimplex_CasoBasico(t *testing.T) {
 	c := []float64{3, 5}
 	A := [][]float64{
@@ -16,18 +16,21 @@ func TestSolveSimplex_CasoBasico(t *testing.T) {
 	b := []float64{4, 12, 18}
 
 	result := SolveSimplexMax(c, A, b)
-	expected := []string{
-		"Solución óptima:",
-		"x1 = 2.00",
-		"x2 = 6.00",
-		"Valor óptimo = 36.00",
+
+	if result.Status != "optimal" {
+		t.Errorf("Se esperaba estado 'optimal', got: %v", result.Status)
 	}
-	if len(result) != len(expected) {
-		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
+
+	if math.Abs(result.Optimal-36.0) > 1e-6 {
+		t.Errorf("Valor óptimo incorrecto, got: %v, want: 36.0", result.Optimal)
+	}
+
+	if math.Abs(result.Variables["x1"]-2.0) > 1e-6 || math.Abs(result.Variables["x2"]-6.0) > 1e-6 {
+		t.Errorf("Variables incorrectas, got: %v", result.Variables)
 	}
 }
 
-// Test:problema con todos ceros
+// Test: problema con todos ceros
 func TestSolveSimplex_TodosCeros(t *testing.T) {
 	c := []float64{0, 0}
 	A := [][]float64{
@@ -37,18 +40,16 @@ func TestSolveSimplex_TodosCeros(t *testing.T) {
 
 	result := SolveSimplexMax(c, A, b)
 
-	valorOptimo := result[len(result)-1]
-	if valorOptimo != "Valor óptimo = 0.00" {
-		t.Errorf("Se esperaba valor óptimo 0.00, got: %v", valorOptimo)
+	if result.Status != "optimal" {
+		t.Errorf("Se esperaba estado 'optimal', got: %v", result.Status)
 	}
 
-	// Extraer las variables de la salida
-	var x1, x2 float64
-	_, err1 := fmt.Sscanf(result[1], "x1 = %f", &x1)
-	_, err2 := fmt.Sscanf(result[2], "x2 = %f", &x2)
-	if err1 != nil || err2 != nil {
-		t.Fatalf("Error al parsear variables de la salida")
+	if math.Abs(result.Optimal-0.0) > 1e-6 {
+		t.Errorf("Valor óptimo incorrecto, got: %v, want: 0.0", result.Optimal)
 	}
+
+	x1 := result.Variables["x1"]
+	x2 := result.Variables["x2"]
 
 	if x1 < -1e-6 || x2 < -1e-6 || x1+x2 > 5+1e-6 {
 		t.Errorf("Solución no factible: x1=%v, x2=%v", x1, x2)
@@ -64,10 +65,9 @@ func TestSolveSimplex_ProblemaInviable(t *testing.T) {
 	b := []float64{-1} // RHS negativa, problema inviables
 
 	result := SolveSimplexMax(c, A, b)
-	expected := []string{"Problema sin solución factible"}
 
-	if len(result) != len(expected) || result[0] != expected[0] {
-		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
+	if result.Status != "infeasible" {
+		t.Errorf("Resultado incorrecto, se esperaba infeasible, got: %v", result.Status)
 	}
 }
 
@@ -80,9 +80,8 @@ func TestSolveSimplex_ProblemaIlimitado(t *testing.T) {
 	b := []float64{1}
 
 	result := SolveSimplexMax(c, A, b)
-	expected := []string{"Problema ilimitado"}
 
-	if len(result) != len(expected) || result[0] != expected[0] {
-		t.Errorf("Resultado incorrecto, got: %v, want: %v", result, expected)
+	if result.Status != "unbounded" {
+		t.Errorf("Resultado incorrecto, se esperaba unbounded, got: %v", result.Status)
 	}
 }
