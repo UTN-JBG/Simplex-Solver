@@ -13,6 +13,10 @@ import (
 
 // SolveSimplexMin resuelve minimización con holguras automáticas
 func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
+	// Validar entradas
+	if err := ValidarEntrada(objective, constraints, rhs); err != nil {
+		return models.SimplexResponse{Status: "error: " + err.Error()}
+	}
 	// Paso 0: invertir el signo de restricciones y RHS
 	flippedConstraints := make([][]float64, len(constraints))
 	flippedRHS := make([]float64, len(rhs))
@@ -53,6 +57,10 @@ func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64
 
 // SolveSimplexMax resuelve maximización con holguras automáticas
 func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
+	// Validar entradas
+	if err := ValidarEntrada(objective, constraints, rhs); err != nil {
+		return models.SimplexResponse{Status: "error: " + err.Error()}
+	}
 	// Invertir objetivo
 	negObj := make([]float64, len(objective))
 	copy(negObj, objective)
