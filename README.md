@@ -9,7 +9,7 @@ Aplicación web que tiene como objetivo resolver problemas de programación line
 - María Belén Sarome
 
 ## Tecnologías
-- **Lenguaje:** Go
+- **Lenguaje:** Go,React
 - **Framework web:** Gin
 - **Gestión de dependencias:** Go Modules (`go mod`)
 
@@ -34,22 +34,13 @@ cd Simplex-Solver
 go mod tidy
 go run main.go
 ```
-## 3. Desde Postman probar ruta
+## 3. Levantar el frontend
+Para instalar dependencias
 ```
-http://localhost:8080/api/simplex
+npm install 
 ```
-En Body, seleccionar raw y copiar JSON
+Para levantar la app
 ```
-{
-  "objective": [4, 3, 2, 1],
-  "constraints": [
-    [2, 1, 0, 3],
-    [1, 3, 2, 1],
-    [0, 2, 1, 4]
-  ],
-  "rhs": [5, 11, 8],
-  "type": "max"
-}
-
+npm start
 
 ```
