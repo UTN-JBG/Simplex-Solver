@@ -1,6 +1,8 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { useEffect, useState } from "react";
+import SimplexResult from "./components/SimplexResult";
+
 
  function App() {
   const [numVars, setNumVars] = useState(2);
@@ -79,7 +81,7 @@ import { useEffect, useState } from "react";
         throw new Error(err.error || res.statusText || "Error en la solicitud");
       }
       const data = await res.json();
-      setResult(data.result);
+      setResult({ ...data.result, type: type });
     } catch (err) {
       alert("Error: " + (err.message || err));
     } finally {
@@ -95,21 +97,30 @@ import { useEffect, useState } from "react";
     doc.text("Simplex Result", 40, y); y += 22;
     doc.setFontSize(12);
     doc.text(`Tipo: ${type}`, 40, y); y += 16;
+    const optimalValue = result.optimal !== undefined ? result.optimal.toFixed(2) : 'N/A'; 
     doc.text(`Valor óptimo: ${String(result.optimal)}`, 40, y); y += 20;
 
-    const vars = Object.entries(result.variables || {}).map(([k, v]) => [k, String(v)]);
-    if (vars.length) autoTable(doc,{ head: [["Variable", "Valor"]], body: vars, startY: y, theme: "grid", headStyles: { fillColor: [6, 86, 115] } });
+    const vars = Object.entries(result.variables || {}).map(([k, v]) => [k, String(v.toFixed(2))]);
+    if (vars.length) {
+      autoTable(doc,{ head: [["Variable", "Valor"]], body: vars, startY: y, theme: "grid", headStyles: { fillColor: [6, 86, 115] } });
+      y = doc.lastAutoTable.finalY + 20;
+    } else {
+      y += 20;
+    }
 
     (result.tableaux_history || []).forEach((t, idx) => {
       const matrix = t.matrix || [];
-      const start = doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : 200;
-      doc.text(`Tabla ${idx + 1}`, 40, start);
-      const head = Array.from({ length: matrix[0]?.length || 0 }, (_, i) => `C${i + 1}`);
-      const body = matrix.map((r) => r.map((c) => String(c)));
-      autoTable(doc,{ head: [head], body, startY: start + 6, theme: "grid", styles: { fontSize: 9 } });
-    });
+      const head = t.headers || Array.from({ length: matrix[0]?.length || 0 }, (_, i) => `C${i + 1}`);
+			const headRow = [head]; 
 
-    doc.save("simplex_result.pdf");
+			doc.text(`Tabla ${idx + 1}`, 40, y);
+			const body = matrix.map((r) => r.map((c) => String(c.toFixed(2)))); 
+			autoTable(doc,{ head: headRow, body, startY: y + 6, theme: "grid", styles: { fontSize: 9 } });
+			y = doc.lastAutoTable.finalY + 12;
+		});
+
+		doc.save("simplex_result.pdf");
+
   };
 
   return (
@@ -183,21 +194,14 @@ import { useEffect, useState } from "react";
           </div>
         </div>
         {result && (
-          <div style={{ marginTop: 16, padding: 12, background: "#00131a", borderRadius: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <strong>Resultado</strong>
-              <button style={{ ...styles.button, padding: "8px 12px" }} onClick={handleDownloadPDF}>Descargar PDF</button>
-            </div>
-            <div style={{ marginTop: 8 }}>
-              <div>Valor óptimo: <strong>{String(result.optimal)}</strong></div>
-              <div style={{ marginTop: 8 }}>
-                <strong>Variables</strong>
-                <ul>
-                  {Object.entries(result.variables || {}).map(([k, v]) => <li key={k}>{k}: {String(v)}</li>)}
-                </ul>
-              </div>
-            </div>
-          </div>
+          <div style={{ marginTop: 16 }}>
+						{/* Pasar el resultado completo, incluyendo el 'type' que agregamos en handleSubmit */}
+						<SimplexResult result={result} />
+
+						{/* Botón para PDF fuera de SimplexResult para usar el handler de App.js */}
+						<button style={{ ...styles.button, padding: "8px 12px", marginTop: 12 }} onClick={handleDownloadPDF}>Descargar PDF</button>
+					</div>
+        
         )}
       </div>
     </div>

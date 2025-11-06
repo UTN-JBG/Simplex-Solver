@@ -191,10 +191,18 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	// 2. Construir la tabla inicial
 	currentTableau := buildInitialTableau(objective, constraints, rhs)
 
+	// --- Lógica de truncamiento en línea para la Tabla Inicial ---
+	// Guardar una copia truncada para la visualización (Tabla 0)
+	truncatedInitial := copyTableau(currentTableau)
+	for i, row := range truncatedInitial {
+		for j, val := range row {
+			truncatedInitial[i][j] = math.Trunc(val*100) / 100
+		}
+	}
 	// Guardar la tabla inicial ENCAPSULADA
 	response.TableauxHistory = append(response.TableauxHistory, models.TableauStep{
 		Headers: headers,
-		Matrix:  copyTableau(currentTableau),
+		Matrix:  truncatedInitial,
 	})
 
 	numCols := len(currentTableau[0])
@@ -222,10 +230,18 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 		// 5. Pivoteo
 		currentTableau = pivot(currentTableau, pivotRow, pivotCol)
 
+		// --- Lógica de truncamiento en línea para las Tablas Intermedias ---
+		// Guardar una copia truncada para la visualización
+		truncatedStep := copyTableau(currentTableau)
+		for i, row := range truncatedStep {
+			for j, val := range row {
+				truncatedStep[i][j] = math.Trunc(val*100) / 100
+			}
+		}
 		// Guardar el resultado del pivoteo ENCAPSULADO
 		response.TableauxHistory = append(response.TableauxHistory, models.TableauStep{
 			Headers: headers,
-			Matrix:  copyTableau(currentTableau),
+			Matrix:  truncatedStep,
 		})
 	}
 
@@ -234,7 +250,7 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	}
 
 	// 6. Extracción de resultados
-	response.Optimal = currentTableau[Z_ROW_INDEX][rhsCol]
+	response.Optimal = math.Trunc(currentTableau[Z_ROW_INDEX][rhsCol]*100) / 100
 
 	// Extracción de valores de variables originales
 	for j := 1; j <= numVariables; j++ {
@@ -265,7 +281,7 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 
 		// 3. Asignar valor
 		if isBasic {
-			response.Variables[fmt.Sprintf("x%d", j)] = currentTableau[basicRow][rhsCol]
+			response.Variables[fmt.Sprintf("x%d", j)] = math.Trunc(currentTableau[basicRow][rhsCol]*100) / 100
 		} else {
 			response.Variables[fmt.Sprintf("x%d", j)] = 0.0
 		}
@@ -351,10 +367,18 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 	// 2. Construir la tabla inicial (es la misma lógica que Primal)
 	currentTableau := buildInitialTableau(objective, constraints, rhs)
 
+	// --- Lógica de truncamiento en línea para la Tabla Inicial ---
+	// Guardar una copia truncada para la visualización (Tabla 0)
+	truncatedInitial := copyTableau(currentTableau)
+	for i, row := range truncatedInitial {
+		for j, val := range row {
+			truncatedInitial[i][j] = math.Trunc(val*100) / 100
+		}
+	}
 	// Guardar la tabla inicial ENCAPSULADA
 	response.TableauxHistory = append(response.TableauxHistory, models.TableauStep{
 		Headers: headers,
-		Matrix:  copyTableau(currentTableau),
+		Matrix:  truncatedInitial,
 	})
 
 	numCols := len(currentTableau[0])
@@ -381,11 +405,18 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 
 		// 5. Pivoteo
 		currentTableau = pivot(currentTableau, pivotRow, pivotCol)
-
+		// --- Lógica de truncamiento en línea para las Tablas Intermedias ---
+		// Guardar una copia truncada para la visualización
+		truncatedStep := copyTableau(currentTableau)
+		for i, row := range truncatedStep {
+			for j, val := range row {
+				truncatedStep[i][j] = math.Trunc(val*100) / 100
+			}
+		}
 		// Guardar el resultado del pivoteo ENCAPSULADO
 		response.TableauxHistory = append(response.TableauxHistory, models.TableauStep{
 			Headers: headers,
-			Matrix:  copyTableau(currentTableau),
+			Matrix:  truncatedStep,
 		})
 	}
 
@@ -421,7 +452,7 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 		}
 
 		if isBasic {
-			response.Variables[fmt.Sprintf("x%d", j)] = currentTableau[basicRow][rhsCol]
+			response.Variables[fmt.Sprintf("x%d", j)] = math.Trunc(currentTableau[basicRow][rhsCol]*100) / 100
 		} else {
 			response.Variables[fmt.Sprintf("x%d", j)] = 0.0
 		}
@@ -478,6 +509,7 @@ func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64
 
 	// 3. Revertir el signo del valor óptimo para obtener el resultado de MIN c^T x
 	detailedResult.Optimal = -detailedResult.Optimal
+	detailedResult.Optimal = math.Trunc(detailedResult.Optimal*100) / 100
 	if math.Abs(detailedResult.Optimal) < 1e-9 {
 		detailedResult.Optimal = 0
 	}
