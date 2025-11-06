@@ -14,8 +14,10 @@ func TestSolveSimplex_CasoBasico(t *testing.T) {
 		{3, 2},
 	}
 	b := []float64{4, 12, 18}
+	// Creamos los tipos de restricción, asumiendo que todas son <= ("le")
+	types := []string{"le", "le", "le"}
 
-	result := SolveSimplexMax(c, A, b)
+	result := SolveSimplexMaxWithTypes(c, A, b, types)
 
 	if result.Status != "optimal" {
 		t.Errorf("Se esperaba estado 'optimal', got: %v", result.Status)
@@ -37,8 +39,9 @@ func TestSolveSimplex_TodosCeros(t *testing.T) {
 		{1, 1},
 	}
 	b := []float64{5}
+	types := []string{"le"}
 
-	result := SolveSimplexMax(c, A, b)
+	result := SolveSimplexMaxWithTypes(c, A, b, types)
 
 	if result.Status != "optimal" {
 		t.Errorf("Se esperaba estado 'optimal', got: %v", result.Status)
@@ -63,8 +66,9 @@ func TestSolveSimplex_ProblemaInviable(t *testing.T) {
 		{1, 1},
 	}
 	b := []float64{-1} // RHS negativa, problema inviables
+	types := []string{"le"}
 
-	result := SolveSimplexMax(c, A, b)
+	result := SolveSimplexMaxWithTypes(c, A, b, types)
 
 	if result.Status != "infeasible" {
 		t.Errorf("Resultado incorrecto, se esperaba infeasible, got: %v", result.Status)
@@ -78,8 +82,9 @@ func TestSolveSimplex_ProblemaIlimitado(t *testing.T) {
 		{-1, 1},
 	}
 	b := []float64{1}
+	types := []string{"le"}
 
-	result := SolveSimplexMax(c, A, b)
+	result := SolveSimplexMaxWithTypes(c, A, b, types)
 
 	if result.Status != "unbounded" {
 		t.Errorf("Resultado incorrecto, se esperaba unbounded, got: %v", result.Status)

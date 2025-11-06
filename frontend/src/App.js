@@ -13,6 +13,7 @@ import SimplexResult from "./components/SimplexResult";
   );
   const [rhs, setRHS] = useState(Array(2).fill(""));
   const [type, setType] = useState("max");
+  const [constraintTypes, setConstraintTypes] = useState(Array(2).fill("le")); // 'le' (≤), 'eq' (=), 'ge' (≥)
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -40,6 +41,12 @@ import SimplexResult from "./components/SimplexResult";
       for (let i = 0; i < numConstr; i++) if (next[i] === undefined) next[i] = "";
       return next;
     });
+    setConstraintTypes((prev) => {
+        const next = [...prev];
+        next.length = numConstr;
+        for (let i = 0; i < numConstr; i++) if (next[i] === undefined) next[i] = "le";
+        return next;
+    });
   }, [numVars, numConstr]);
 
   const styles = {
@@ -53,17 +60,20 @@ import SimplexResult from "./components/SimplexResult";
     matrix: { display: "grid", gap: 8, marginTop: 8 },
     matrixRow: { display: "flex", gap: 8 },
     previewJson: { marginTop: 12, padding: 12, background: "#00131a", borderRadius: 8, fontSize: 13, color: "#bfeafc" },
+    select: { ...{ width: 70, padding: "6px 8px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", background: "#0b1720", color: "#e6eef3" },
+        textAlign: "center"}
   };
 
   const setObjectiveAt = (i, v) => setObjective((s) => { const n = [...s]; n[i] = v; return n; });
   const setConstraintAt = (r, c, v) => setConstraints((s) => { const n = s.map((row) => [...row]); n[r][c] = v; return n; });
   const setRHSAt = (i, v) => setRHS((s) => { const n = [...s]; n[i] = v; return n; });
+  const setConstraintTypeAt = (i, v) => setConstraintTypes((s) => { const n = [...s]; n[i] = v; return n; });
 
   const buildPayload = () => {
     const obj = objective.map((v) => Number(String(v).trim()));
     const A = constraints.map((row) => row.map((v) => Number(String(v).trim())));
     const b = rhs.map((v) => Number(String(v).trim()));
-    return { objective: obj, constraints: A, rhs: b, type };
+    return { objective: obj, constraints: A, rhs: b, type , constraint_types: constraintTypes };
   };
 
   const handleSubmit = async () => {
@@ -182,7 +192,11 @@ import SimplexResult from "./components/SimplexResult";
                     placeholder={`a${rIdx + 1}${cIdx + 1}`}
                   />
                 ))}
-                <div style={{ width: 40, textAlign: "center", color: "#9fb4c9" }}>=</div>
+                <select style={styles.select} value={constraintTypes[rIdx]} onChange={(e) => setConstraintTypeAt(rIdx, e.target.value)}>
+                    <option value="le">≤</option>
+                    <option value="eq">=</option>
+                    <option value="ge">≥</option>
+                </select>
                 <input
                   style={{ ...styles.smallInput, width: 120 }}
                   value={rhs[rIdx]}

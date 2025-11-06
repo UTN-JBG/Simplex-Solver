@@ -58,8 +58,9 @@ func TestSolveSimplexMax_Detallado_Pasos(t *testing.T) {
 		{3, 2},
 	}
 	b := []float64{4, 12, 18}
+	types := []string{"le", "le", "le"}
 
-	result := SolveSimplexMax(c, A, b)
+	result := SolveSimplexMaxWithTypes(c, A, b, types)
 
 	expectedOptimal := 36.0
 	// Se esperan 3 Tablas: Inicial (1) + Pivot 1 (1) + Pivot 2 (1) = 3
@@ -91,8 +92,9 @@ func TestSolveSimplexMin_Detallado_Pasos(t *testing.T) {
 		{0, 1},
 	}
 	b := []float64{3, 4}
+	types := []string{"le", "le"}
 
-	result := SolveSimplexMin(c, A, b)
+	result := SolveSimplexMinWithTypes(c, A, b, types)
 
 	// La solución MIN es -7.0 (ya que MAX Z' = 7.0)
 	expectedOptimal := -7.0

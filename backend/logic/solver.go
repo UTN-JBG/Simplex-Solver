@@ -52,6 +52,41 @@ func generateColumnHeaders(numVariables, numConstraints int) []string {
 	return headers
 }
 
+// StandardizeConstraints convierte las restricciones a la forma canónica (solo <=)
+// Esto multiplica por -1 las restricciones GE (>=) y devuelve error en EQ (=).
+func StandardizeConstraints(constraints [][]float64, rhs []float64, types []string) ([][]float64, []float64, error) {
+	if len(constraints) != len(types) || len(constraints) != len(rhs) {
+		return nil, nil, errors.New("los tamaños de las restricciones, RHS y tipos no coinciden")
+	}
+
+	newConstraints := make([][]float64, len(constraints))
+	newRHS := make([]float64, len(rhs))
+
+	for i := 0; i < len(constraints); i++ {
+		newConstraints[i] = make([]float64, len(constraints[i]))
+		copy(newConstraints[i], constraints[i])
+		newRHS[i] = rhs[i]
+
+		constraintType := types[i]
+
+		switch constraintType {
+		case "le": // Menor o igual (<=):  .
+		case "ge": // Mayor o igual (>=): Multiplicar por -1 para convertir a <=.
+			// Esto convierte A_i x >= b_i en -A_i x <= -b_i.
+			for j := 0; j < len(newConstraints[i]); j++ {
+				newConstraints[i][j] *= -1.0
+			}
+			newRHS[i] *= -1.0
+		case "eq": // Igualdad (=): Requiere Gran M.
+			return nil, nil, errors.New("solver simple no soporta restricciones de igualdad (=). Se necesita el método de Gran M")
+		default:
+			return nil, nil, errors.New("tipo de restricción no reconocido: " + constraintType)
+		}
+	}
+
+	return newConstraints, newRHS, nil
+}
+
 // --- Lógica del Método Simplex Primal (Usado para MAX) ---
 
 // buildInitialTableau construye la tabla inicial del Simplex para un problema de MAXIMIZACIÓN.
@@ -181,6 +216,13 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	if err := ValidarEntrada(objective, constraints, rhs); err != nil {
 		response.Status = "error: " + err.Error()
 		return response
+	}
+	// El Simplex Primal requiere que RHS >= 0 para comenzar.
+	for _, val := range rhs {
+		if val < -1e-9 { // Si hay un RHS negativo, Primal no puede comenzar.
+			response.Status = "error: problema con RHS negativo. El Simplex Primal simple no puede comenzar. Intenta con Dual."
+			return response
+		}
 	}
 
 	numVariables := len(objective)
@@ -463,16 +505,16 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 
 // --- Funciones de Interfaz (MAX/MIN) ---
 
-// SolveSimplexMax resuelve maximización.
-// La validación se hace pero el estado final es simple.
-func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
-	// 1. Validar entradas
-	if err := ValidarEntrada(objective, constraints, rhs); err != nil {
+// SolveSimplexMaxWithTypes resuelve maximización con tipos de restricción.
+func SolveSimplexMaxWithTypes(objective []float64, constraints [][]float64, rhs []float64, types []string) models.SimplexResponse {
+	// 1. Preprocesar y estandarizar a <=
+	stdConstraints, stdRHS, err := StandardizeConstraints(constraints, rhs, types)
+	if err != nil {
 		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
 	// 2. Ejecutar Simplex Primal (Implementación propia)
-	detailedResult := SolvePrimalSimplexDetailed(objective, constraints, rhs)
+	detailedResult := SolvePrimalSimplexDetailed(objective, stdConstraints, stdRHS)
 
 	// 3. Ejecutar Simplex de gonum (para validación, pero el resultado solo se usa internamente)
 	negObj := make([]float64, len(objective))
@@ -489,11 +531,11 @@ func SolveSimplexMax(objective []float64, constraints [][]float64, rhs []float64
 	return detailedResult
 }
 
-// SolveSimplexMin resuelve minimización.
-// La validación se hace pero el estado final es simple.
-func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64) models.SimplexResponse {
-	// 1. Validar entradas
-	if err := ValidarEntrada(objective, constraints, rhs); err != nil {
+// SolveSimplexMinWithTypes resuelve minimización con tipos de restricción.
+func SolveSimplexMinWithTypes(objective []float64, constraints [][]float64, rhs []float64, types []string) models.SimplexResponse {
+	// 1. Preprocesar y estandarizar a <=
+	stdConstraints, stdRHS, err := StandardizeConstraints(constraints, rhs, types)
+	if err != nil {
 		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
@@ -505,7 +547,7 @@ func SolveSimplexMin(objective []float64, constraints [][]float64, rhs []float64
 	}
 
 	// 2. Ejecutar Simplex Dual detallado (MAX -c^T x).
-	detailedResult := SolveDualSimplexDetailed(negObjDetailed, constraints, rhs)
+	detailedResult := SolveDualSimplexDetailed(negObjDetailed, stdConstraints, stdRHS)
 
 	// 3. Revertir el signo del valor óptimo para obtener el resultado de MIN c^T x
 	detailedResult.Optimal = -detailedResult.Optimal

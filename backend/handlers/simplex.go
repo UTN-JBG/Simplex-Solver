@@ -27,9 +27,9 @@ func SolveSimplexHandler(c *gin.Context) {
 	var result models.SimplexResponse
 
 	if req.Type == "min" {
-		result = logic.SolveSimplexMin(req.Objective, req.Constraints, req.RHS)
+		result = logic.SolveSimplexMinWithTypes(req.Objective, req.Constraints, req.RHS, req.ConstraintTypes)
 	} else {
-		result = logic.SolveSimplexMax(req.Objective, req.Constraints, req.RHS)
+		result = logic.SolveSimplexMaxWithTypes(req.Objective, req.Constraints, req.RHS, req.ConstraintTypes)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
