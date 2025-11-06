@@ -107,16 +107,57 @@ import SimplexResult from "./components/SimplexResult";
     doc.text("Simplex Result", 40, y); y += 22;
     doc.setFontSize(12);
     doc.text(`Tipo: ${type}`, 40, y); y += 16;
-    const optimalValue = result.optimal !== undefined ? result.optimal.toFixed(2) : 'N/A'; 
-    doc.text(`Valor óptimo: ${String(result.optimal)}`, 40, y); y += 20;
 
-    const vars = Object.entries(result.variables || {}).map(([k, v]) => [k, String(v.toFixed(2))]);
+    // Recuperar datos del formulario actual
+    const payload = buildPayload();
+    // Función objetivo
+  const objectiveText = payload.objective
+    .map((coef, i) => `${coef >= 0 && i > 0 ? "+ " : ""}${coef}x${i + 1}`)
+    .join(" ");
+  doc.text(`Función objetivo: Z = ${objectiveText}`, 40, y);
+  y += 20;
+
+  // Restricciones
+  doc.text("Restricciones:", 40, y);
+  y += 18;
+
+  payload.constraints.forEach((row, idx) => {
+    const lhs = row
+      .map((coef, j) => `${coef >= 0 && j > 0 ? "+ " : ""}${coef}x${j + 1}`)
+      .join(" ");
+    const sign =
+      payload.constraint_types?.[idx] === "le"
+      ? "<="
+      : payload.constraint_types?.[idx] === "ge"
+      ? ">="
+      : "=";
+    const rhsVal = payload.rhs?.[idx] ?? "";
+    doc.text(`${lhs} ${sign} ${rhsVal}`, 60, y);
+    y += 16;
+  });
+
+  y += 10;
+
+  // Resultado óptimo
+  const optimalValue =
+    result.optimal !== undefined ? result.optimal.toFixed(2) : "N/A";
+  doc.text(`Valor óptimo: ${optimalValue}`, 40, y);
+  y += 20;
+
+  // Variables
+  const vars = Object.entries(result.variables || {}).map(([k, v]) => [
+    k,
+    String(v.toFixed(2)),
+  ]);
+
+    // Pasos intermedios
     if (vars.length) {
       autoTable(doc,{ head: [["Variable", "Valor"]], body: vars, startY: y, theme: "grid", headStyles: { fillColor: [6, 86, 115] } });
       y = doc.lastAutoTable.finalY + 20;
     } else {
       y += 20;
     }
+    
 
     (result.tableaux_history || []).forEach((t, idx) => {
       const matrix = t.matrix || [];
