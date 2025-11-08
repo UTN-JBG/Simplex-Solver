@@ -81,7 +81,7 @@ import SimplexResult from "./components/SimplexResult";
     try {
       const payload = buildPayload();
       console.log("Payload:", payload);
-      const res = await fetch("http://localhost:8080/api/simplex", {
+      const res = await fetch(`${process.env.REACT_APP_API_URL}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
