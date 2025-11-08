@@ -220,7 +220,9 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	// El Simplex Primal requiere que RHS >= 0 para comenzar.
 	for _, val := range rhs {
 		if val < -1e-9 { // Si hay un RHS negativo, Primal no puede comenzar.
-			response.Status = "error: problema con RHS negativo. El Simplex Primal simple no puede comenzar. Intenta con Dual."
+			// RHS negativo → el problema es inviables para el método primal
+			response.Status = "infeasible"
+			//response.Status = "error: problema con RHS negativo. El Simplex Primal simple no puede comenzar. Intenta con Dual."
 			return response
 		}
 	}
@@ -246,6 +248,24 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 		Headers: headers,
 		Matrix:  truncatedInitial,
 	})
+
+	// Si la función objetivo es constante (todos los coeficientes 0),
+	// devolver la primera solución factible trivial.
+	isZeroObjective := true
+	for _, v := range objective {
+		if math.Abs(v) > 1e-9 {
+			isZeroObjective = false
+			break
+		}
+	}
+	if isZeroObjective {
+		for j := 1; j <= numVariables; j++ {
+			response.Variables[fmt.Sprintf("x%d", j)] = 0.0
+		}
+		response.Optimal = 0.0
+		response.Status = "optimal (degenerate: multiple solutions)"
+		return response
+	}
 
 	numCols := len(currentTableau[0])
 	rhsCol := numCols - 1
@@ -539,15 +559,15 @@ func SolveSimplexMinWithTypes(objective []float64, constraints [][]float64, rhs 
 		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
-	// --- Ejecutar Simplex Dual Detallado ---
+	// Invertir el objetivo: MIN(cᵀx) → MAX(-cᵀx)
 	negObjDetailed := make([]float64, len(objective))
 	copy(negObjDetailed, objective)
 	for i := range negObjDetailed {
 		negObjDetailed[i] = -negObjDetailed[i]
 	}
 
-	// 2. Ejecutar Simplex Dual detallado (MAX -c^T x).
-	detailedResult := SolveDualSimplexDetailed(negObjDetailed, stdConstraints, stdRHS)
+	// 2. Ejecutar Simplex Primal detallado (resuelve el MAX equivalente a -c^T x).
+	detailedResult := SolvePrimalSimplexDetailed(negObjDetailed, stdConstraints, stdRHS)
 
 	// 3. Revertir el signo del valor óptimo para obtener el resultado de MIN c^T x
 	detailedResult.Optimal = -detailedResult.Optimal
