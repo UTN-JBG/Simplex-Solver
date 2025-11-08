@@ -85,15 +85,15 @@ func TestSolveSimplexMax_Detallado_Pasos(t *testing.T) {
 
 // Test: Problema de Minimización (Resuelto por Dualidad MAX, requiere 2 iteraciones)
 func TestSolveSimplexMin_Detallado_Pasos(t *testing.T) {
-	// Problema de ejemplo (MIN): Z = -1x1 - 1x2
-	// s.a. x1 <= 3, x2 <= 4
-	c := []float64{-1, -1}
+	// Problema de ejemplo (MIN):
+	c := []float64{40, 50, 60}
 	A := [][]float64{
-		{1, 0},
-		{0, 1},
+		{4, 4, 5},
+		{200, 300, 300},
+		{600, 400, 500},
 	}
-	b := []float64{3, 4}
-	types := []string{"le", "le"}
+	b := []float64{80, 6000, 5000}
+	types := []string{"le", "le", "le"}
 
 	result := logic.SolveSimplexMinWithTypes(c, A, b, types)
 
