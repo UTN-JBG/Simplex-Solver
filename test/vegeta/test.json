@@ -1,0 +1,11 @@
+{
+  "objective": [60, 80],
+	"constraint_types" : ["ge", "ge"],
+  "constraints": [
+   [6,5],
+		[2, 5]
+  ],
+  "rhs": [50, 30],
+	"type": "min"
+}
+
