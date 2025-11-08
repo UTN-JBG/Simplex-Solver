@@ -70,7 +70,7 @@ func StandardizeConstraints(constraints [][]float64, rhs []float64, types []stri
 		constraintType := types[i]
 
 		switch constraintType {
-		case "le": // Menor o igual (<=):  .
+		case "le": // Menor o igual (<=): 	.
 		case "ge": // Mayor o igual (>=): Multiplicar por -1 para convertir a <=.
 			// Esto convierte A_i x >= b_i en -A_i x <= -b_i.
 			for j := 0; j < len(newConstraints[i]); j++ {
@@ -220,10 +220,6 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	// El Simplex Primal requiere que RHS >= 0 para comenzar.
 	for _, val := range rhs {
 		if val < -1e-9 { // Si hay un RHS negativo, Primal no puede comenzar.
-			// RHS negativo → el problema es inviables para el método primal
-			response.Status = "infeasible"
-			//response.Status = "error: problema con RHS negativo. El Simplex Primal simple no puede comenzar. Intenta con Dual."
-			return response
 		}
 	}
 
@@ -312,7 +308,8 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	}
 
 	// 6. Extracción de resultados
-	response.Optimal = math.Trunc(currentTableau[Z_ROW_INDEX][rhsCol]*100) / 100
+	response.Optimal = currentTableau[Z_ROW_INDEX][rhsCol]
+	response.Optimal = math.Trunc(response.Optimal*100) / 100 // Truncamiento
 
 	// Extracción de valores de variables originales
 	for j := 1; j <= numVariables; j++ {
@@ -486,7 +483,9 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 		return response
 	}
 
-	// 6. Extracción de resultados (misma lógica que Primal)
+	// 6. Extracción de resultados
+	// En Dual, la tabla final ya está en estado óptimo/factible, y el valor
+	// RHS de la Fila Z es directamente el valor de Z_min.
 	response.Optimal = currentTableau[Z_ROW_INDEX][rhsCol]
 
 	for j := 1; j <= numVariables; j++ {
@@ -519,6 +518,11 @@ func SolveDualSimplexDetailed(objective []float64, constraints [][]float64, rhs 
 			response.Variables[fmt.Sprintf("x%d", j)] = 0.0
 		}
 	}
+	// Truncación final
+	response.Optimal = math.Trunc(response.Optimal*100) / 100
+	if math.Abs(response.Optimal) < 1e-9 {
+		response.Optimal = 0
+	}
 
 	return response
 }
@@ -548,6 +552,9 @@ func SolveSimplexMaxWithTypes(objective []float64, constraints [][]float64, rhs 
 	_, _, _ = lp.Simplex(obj, A, rhs, 0, nil)
 
 	// 4. Retornar el estado simple del solver detallado.
+	// MAX: SolvePrimalSimplexDetailed devuelve +Zmax. No requiere corrección de signo.
+	detailedResult.Optimal = math.Trunc(detailedResult.Optimal*100) / 100
+
 	return detailedResult
 }
 
@@ -559,21 +566,25 @@ func SolveSimplexMinWithTypes(objective []float64, constraints [][]float64, rhs 
 		return models.SimplexResponse{Status: "error: " + err.Error()}
 	}
 
-	// Invertir el objetivo: MIN(cᵀx) → MAX(-cᵀx)
-	negObjDetailed := make([]float64, len(objective))
-	copy(negObjDetailed, objective)
-	for i := range negObjDetailed {
-		negObjDetailed[i] = -negObjDetailed[i]
+	// 2. Determinar si se usa Primal o Dual
+	// Se usa Primal si todos los RHS son NO NEGATIVOS (forma canónica válida).
+	// Se usa Dual si hay al menos un RHS NEGATIVO.
+	useDual := false
+	for _, val := range stdRHS {
+		if val < -1e-9 {
+			useDual = true
+			break
+		}
 	}
 
-	// 2. Ejecutar Simplex Primal detallado (resuelve el MAX equivalente a -c^T x).
-	detailedResult := SolvePrimalSimplexDetailed(negObjDetailed, stdConstraints, stdRHS)
-
-	// 3. Revertir el signo del valor óptimo para obtener el resultado de MIN c^T x
-	detailedResult.Optimal = -detailedResult.Optimal
-	detailedResult.Optimal = math.Trunc(detailedResult.Optimal*100) / 100
-	if math.Abs(detailedResult.Optimal) < 1e-9 {
-		detailedResult.Optimal = 0
+	var detailedResult models.SimplexResponse
+	if useDual {
+		// Caso Dual: El solver dual devuelve Zmin directamente (e.g. +620.0). No se toca.
+		detailedResult = SolveDualSimplexDetailed(objective, stdConstraints, stdRHS)
+	} else {
+		// Caso Primal: El solver primal se llama para MAX(-c^T x).
+		detailedResult = SolvePrimalSimplexDetailed(objective, stdConstraints, stdRHS)
+		// detailedResult.Optimal = -detailedResult.Optimal // <--- LÍNEA ELIMINADA
 	}
 
 	// 4. Ejecutar Simplex de gonum (para validación, pero el resultado solo se usa internamente)
@@ -582,7 +593,12 @@ func SolveSimplexMinWithTypes(objective []float64, constraints [][]float64, rhs 
 	// Se llama a gonum OptVal para asegurar que la validación se realice, pero el resultado de Status no se modifica.
 	_, _, _ = lp.Simplex(obj_gonum, A_gonum, rhs, 0, nil)
 
-	// 5. Retornar el estado simple del solver detallado.
+	// 5. Truncamiento final y retorno
+	detailedResult.Optimal = math.Trunc(detailedResult.Optimal*100) / 100
+	if math.Abs(detailedResult.Optimal) < 1e-9 {
+		detailedResult.Optimal = 0
+	}
+
 	return detailedResult
 }
 
