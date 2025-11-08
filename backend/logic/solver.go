@@ -219,7 +219,10 @@ func SolvePrimalSimplexDetailed(objective []float64, constraints [][]float64, rh
 	}
 	// El Simplex Primal requiere que RHS >= 0 para comenzar.
 	for _, val := range rhs {
-		if val < -1e-9 { // Si hay un RHS negativo, Primal no puede comenzar.
+		if val < -1e-9 {
+			// Si hay un RHS negativo, el problema es inviable para el Primal simple.
+			response.Status = "infeasible"
+			return response
 		}
 	}
 
