@@ -1,12 +1,11 @@
 package main
 
 import (
+	"os"
 	"proyecto/simplex/handlers"
 
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cors"
-
-
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -20,6 +19,11 @@ func main() {
 
 	// Endpoint del simplex
 	r.POST("/api/simplex", handlers.SolveSimplexHandler)
+	// Puerto dinámico para Render
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // fallback local
+	}
+	r.Run(":" + port)
 
-	r.Run(":8080") // localhost:8080
 }
