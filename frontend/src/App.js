@@ -204,16 +204,20 @@ import SimplexResult from "./components/SimplexResult";
         </div>
 
         <div style={{ marginTop: 8 }}>
-          <div style={{ marginBottom: 8, color: "#9fb4c9" }}>Objetivo (coeficientes)</div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ marginBottom: 8, color: "#9fb4c9" }}> Función Objetivo </div>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
+            <span style={{ color: "#00d1ff", fontWeight: 600 }}>Z =</span>
             {objective.map((val, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <input
-                key={i}
-                style={styles.smallInput}
+                style={{ ...styles.smallInput, width: 70 }}
                 value={val}
                 onChange={(e) => setObjectiveAt(i, e.target.value)}
                 placeholder={`c${i + 1}`}
               />
+              <span style={{ color: "#9fb4c9" }}>{`x${i + 1}`}</span>
+              {i < objective.length - 1 && <span style={{ color: "#9fb4c9" }}>+</span>}
+              </div>
             ))}
           </div>
         </div>
@@ -222,21 +226,28 @@ import SimplexResult from "./components/SimplexResult";
           <div style={{ marginBottom: 8, color: "#9fb4c9" }}>Matriz de restricciones (fila × columna)</div>
           <div style={styles.matrix}>
             {constraints.map((row, rIdx) => (
-              <div key={rIdx} style={styles.matrixRow}>
-                <div style={{ width: 60, color: "#9fb4c9", display: "flex", alignItems: "center" }}>{`R${rIdx + 1}`}</div>
+              <div key={rIdx} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ width: 40, color: "#9fb4c9" }}>{`R${rIdx + 1}:`}</span>
                 {row.map((cell, cIdx) => (
+                  <div key={cIdx} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                   <input
-                    key={cIdx}
-                    style={styles.smallInput}
+                    style={{ ...styles.smallInput, width: 70 }}
                     value={cell}
                     onChange={(e) => setConstraintAt(rIdx, cIdx, e.target.value)}
                     placeholder={`a${rIdx + 1}${cIdx + 1}`}
                   />
+                  <span style={{ color: "#9fb4c9" }}>{`x${cIdx + 1}`}</span>
+                  {cIdx < row.length - 1 && <span style={{ color: "#9fb4c9" }}>+</span>}
+                  </div>
                 ))}
-                <select style={styles.select} value={constraintTypes[rIdx]} onChange={(e) => setConstraintTypeAt(rIdx, e.target.value)}>
-                    <option value="le">≤</option>
-                    <option value="eq">=</option>
-                    <option value="ge">≥</option>
+                <select 
+                  style={styles.select} 
+                  value={constraintTypes[rIdx]} 
+                  onChange={(e) => setConstraintTypeAt(rIdx, e.target.value)}
+                  >
+                  <option value="le">≤</option>
+                  <option value="eq">=</option>
+                  <option value="ge">≥</option>
                 </select>
                 <input
                   style={{ ...styles.smallInput, width: 120 }}
